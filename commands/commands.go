@@ -105,6 +105,7 @@ func (u update) Execute() string {
 func (l list) Execute() string {
 	status := "all"
 	if len(l.args) != 0 {
+		log.Printf("status %v", l.args[0])
 		status = l.args[0]
 
 	}
