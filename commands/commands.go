@@ -20,35 +20,37 @@ func CommandFactory(args []string, tasks tasks.Tasks) (Command, error) {
 
 	switch command {
 	case "add":
-		return add{
-			taskService: tasks,
-			args: args[1:],
+		return addCommand{
+			tasks: tasks,
+			args:        args[1:],
 		}, nil
 	case "update":
-		return update{
-			taskService: tasks,
-			args: args[1:],
+		return updateCommand{
+			tasks: tasks,
+			args:        args[1:],
 		}, nil
 	case "list":
-		return list{
+		return listCommand{
 			tasks: tasks,
-			args: args[1:],
+			args:  args[1:],
 		}, nil
 	case "delete":
-		return delete{
+		return deleteCommand{
 			tasks: tasks,
-			args: args[1:],
+			args:  args[1:],
 		}, nil
 	case "mark-in-progress":
-		return mark{
+		return markCommand{
 			tasks: tasks,
-			args: args,
+			args:  args,
 		}, nil
 	case "mark-done":
-		return mark{
+		return markCommand{
 			tasks: tasks,
-			args: args,
+			args:  args,
 		}, nil
+	case "help":
+		return helpCommand{}, nil
 	default:
 		return nil, errors.New("unknown command. Run help to get available commands")
 	}
@@ -59,50 +61,53 @@ type Command interface {
 	Execute() string
 }
 
-type add struct {
-	taskService tasks.Tasks
-	args []string
+type helpCommand struct {
 }
 
-type list struct {
+type addCommand struct {
 	tasks tasks.Tasks
-	args []string
+	args        []string
 }
 
-type update struct {
-	taskService tasks.Tasks
-	args []string
-}
-
-type delete struct {
+type listCommand struct {
 	tasks tasks.Tasks
-	args []string
+	args  []string
 }
 
-type mark struct {
+type updateCommand struct {
 	tasks tasks.Tasks
-	args []string
+	args        []string
 }
 
-func (a add) Execute() string {
-	id := a.taskService.AddTask(a.args[0])
+type deleteCommand struct {
+	tasks tasks.Tasks
+	args  []string
+}
+
+type markCommand struct {
+	tasks tasks.Tasks
+	args  []string
+}
+
+func (a addCommand) Execute() string {
+	id := a.tasks.Add(a.args[0])
 	if id < 0 {
 		return "There was a problem, could not add new task."
 	}
 	return fmt.Sprintf("Task added successfully (ID: %v)", id)
 }
 
-func (u update) Execute() string {
+func (u updateCommand) Execute() string {
 	id, err := strconv.Atoi(u.args[0])
 	if err != nil {
 		log.Fatal("invalid task ID")
 	}
 
-	u.taskService.UpdateTask(id, u.args[1])
+	u.tasks.Update(id, u.args[1])
 	return "Task updated successfully"
 }
 
-func (l list) Execute() string {
+func (l listCommand) Execute() string {
 	status := "all"
 	if len(l.args) != 0 {
 		log.Printf("status %v", l.args[0])
@@ -110,7 +115,7 @@ func (l list) Execute() string {
 
 	}
 
-	tasks, err := l.tasks.ListTasks(status)
+	tasks, err := l.tasks.List(status)
 	if err != nil {
 		log.Fatal(err)
 		return "Could not load tasks"
@@ -120,8 +125,7 @@ func (l list) Execute() string {
 
 }
 
-
-func (d delete) Execute() string {
+func (d deleteCommand) Execute() string {
 	id, err := strconv.Atoi(d.args[0])
 	if err != nil {
 		return "Invalid task ID"
@@ -130,9 +134,7 @@ func (d delete) Execute() string {
 	return "Task deleted successfully"
 }
 
-
-
-func (m mark) Execute() string {
+func (m markCommand) Execute() string {
 	id, err := strconv.Atoi(m.args[1])
 	if err != nil {
 		return "Invalid task ID"
@@ -155,4 +157,32 @@ func getStatus(args string) string {
 	}
 
 	return ""
+}
+
+func (h helpCommand) Execute() string {
+	return `
+	Task-CLI Help
+	=============
+
+	Usage:
+	task-cli <command> [arguments]
+
+	Available Commands:
+	add                Add a new task
+	update             Update an existing task
+	list               List all tasks
+	delete             Delete a task
+	mark-in-progress   Mark a task as in progress
+	mark-done          Mark a task as done
+	help               Show this help message
+
+	Examples:
+	task-cli add "Buy groceries"          Add a new task with the description "Buy groceries"
+	task-cli update 1 "Buy groceries and cook dinner"  Update task with ID 1
+	task-cli list                         List all tasks
+	task-cli delete 1                     Delete task with ID 1
+	task-cli mark-in-progress 1           Mark task with ID 1 as in progress
+	task-cli mark-done 1                  Mark task with ID 1 as done
+	task-cli help                         Show this help message
+	`
 }

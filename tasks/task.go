@@ -13,18 +13,18 @@ type TaskItem struct {
 }
 
 type Tasks struct {
-	tasksStorage TaskDataBase[TasksList]
+	taskRepo TaskRepository[TasksList]
 }
 
-func NewTasks(tasksStorage TaskDataBase[TasksList]) *Tasks {
+func NewTasks(taskRepository TaskRepository[TasksList]) *Tasks {
 	return &Tasks{
-		tasksStorage: tasksStorage,
+		taskRepo: taskRepository,
 	}
 }
 
-func (t Tasks) AddTask(taskDescription string) int {
+func (t Tasks) Add(taskDescription string) int {
 
-	tasks, err := t.tasksStorage.LoadTasks()
+	tasks, err := t.taskRepo.LoadTasks()
 
 	if err != nil {
 		log.Fatal(err)
@@ -39,12 +39,12 @@ func (t Tasks) AddTask(taskDescription string) int {
 	}
 
 	tasks.Tasks = append(tasks.Tasks, task)
-	t.tasksStorage.Save(tasks)
+	t.taskRepo.Save(tasks)
 	return len(tasks.Tasks)
 }
 
-func (t Tasks) UpdateTask(id int, description string) {
-	tasks, err := t.tasksStorage.LoadTasks()
+func (t Tasks) Update(id int, description string) {
+	tasks, err := t.taskRepo.LoadTasks()
 	if err != nil {
 		log.Fatal("Error while loading tasks")
 	}
@@ -59,11 +59,11 @@ func (t Tasks) UpdateTask(id int, description string) {
 	task.UpdatedAt = time.Now()
 	tasks.Tasks[id-1] = task
 
-	t.tasksStorage.Save(tasks)
+	t.taskRepo.Save(tasks)
 }
 
 func (t Tasks) Delete(id int) {
-	tasks, err := t.tasksStorage.LoadTasks()
+	tasks, err := t.taskRepo.LoadTasks()
 
 	if err != nil {
 		log.Fatal("Error while deleting tasks tasks")
@@ -84,25 +84,25 @@ func (t Tasks) Delete(id int) {
 	}
 
 	tasks.Tasks = newTasksSlice
-	t.tasksStorage.Save(tasks)
+	t.taskRepo.Save(tasks)
 }
 
-func (t Tasks) Mark(id int, state string) {
-	tasksList, err := t.tasksStorage.LoadTasks()
+func (t Tasks) Mark(id int, status string) {
+	tasksList, err := t.taskRepo.LoadTasks()
 	if err != nil {
 		log.Fatal("Task does not exist")
 		return
 	}
 
 	task := tasksList.Tasks[id-1]
-	task.Status = StatusFromString(state)
+	task.Status = StatusFromString(status)
 	task.UpdatedAt = time.Now()
 	tasksList.Tasks[id-1] = task
-	t.tasksStorage.Save(tasksList)
+	t.taskRepo.Save(tasksList)
 }
 
-func (t Tasks) ListTasks(toStatus string) ([]TaskItem, error) {
-	tasksList, err := t.tasksStorage.LoadTasks()
+func (t Tasks) List(toStatus string) ([]TaskItem, error) {
+	tasksList, err := t.taskRepo.LoadTasks()
 	if err != nil {
 		return nil, errors.New("Task does not exist")
 	}
